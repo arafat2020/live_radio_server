@@ -1,98 +1,99 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# [ WEB RADIO SERVER ARCHITECTURE ]
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+A production-ready, scalable web radio server implementation. This system features an automated DJ that plays tracks from a database, seamless switching to a live human DJ, and scalable file storage.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+## ✦ PURPOSE ✦
+The purpose of this project is to provide a fully decoupled, robust radio broadcasting system. By separating the API layer, storage layer, and streaming engine, the architecture can scale horizontally. It allows multiple DJs to broadcast live, automates playlist generation, and handles media uploads using modern cloud-native patterns.
 
-## Description
+## ✦ TECH STACK & ARCHITECTURE ✦
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+- **NestJS**: The core API layer handling uploads and business logic.
+- **Drizzle ORM & PostgreSQL**: Database layer storing track metadata.
+- **MinIO**: S3-compatible object storage for hosting audio files and cover art.
+- **BullMQ & Redis**: Asynchronous job queue for processing audio and rebuilding playlists without blocking the API.
+- **Liquidsoap**: The powerful stream generator (DJ engine) that reads playlists, applies crossfades, and accepts live input.
+- **Icecast**: The audio streaming server that broadcasts the final mixed stream to listeners worldwide.
+- **Docker Compose**: Orchestrates all infrastructure services locally.
 
-## Project setup
+---
 
+## ✦ FEATURES ✦
+
+- **AutoDJ**: Automatically plays songs uploaded to the system via a dynamically generated `m3u` playlist.
+- **Live DJ Fallback**: Human DJs can connect live using standard broadcasting software (e.g., BUTT, Mixxx, OBS). The stream instantly and gracefully crossfades from the automated playlist to the live DJ.
+- **S3-Compatible Storage**: Audio files are safely stored in MinIO rather than the local filesystem, preparing the app for cloud deployments like AWS S3.
+- **Asynchronous Processing**: Uploads trigger a background job to rebuild the playlist, keeping the API lightning fast.
+
+---
+
+## ✦ SETUP AND INSTALLATION ✦
+
+### 1. Prerequisites
+- **Docker & Docker Compose**
+- **Node.js** (v18+)
+
+### 2. Install Dependencies
+Install the NestJS project dependencies:
 ```bash
-$ npm install
+npm install
 ```
 
-## Compile and run the project
-
+### 3. Start Infrastructure
+Start the Docker containers (PostgreSQL, Redis, MinIO, Icecast, Liquidsoap) in the background:
 ```bash
-# development
-$ npm run start
-
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
+docker-compose up -d
 ```
 
-## Run tests
-
+### 4. Initialize Database
+Push the Drizzle ORM schema to the PostgreSQL database:
 ```bash
-# unit tests
-$ npm run test
-
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
+npx drizzle-kit push:pg
 ```
 
-## Deployment
-
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
-
+### 5. Start the API Server
+Start the NestJS application:
 ```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
+npm run start:dev
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+---
 
-## Resources
+## ✦ USAGE GUIDE ✦
 
-Check out a few resources that may come in handy when working with NestJS:
+### Uploading a Track (AutoDJ)
+To add a track to the automated playlist, send a `POST` request to the `/upload` endpoint with a multipart form containing an audio file.
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+**Example via cURL:**
+```bash
+curl -X POST http://localhost:3000/upload \
+  -F "file=@/path/to/your/song.mp3"
+```
+*Behind the scenes: The API uploads the file to MinIO, saves it to Postgres, and BullMQ generates a fresh `radio.m3u` playlist for Liquidsoap to instantly read.*
 
-## Support
+### Listening to the Radio
+Open your browser or any media player (like VLC) and connect to the Icecast stream:
+```
+http://localhost:8000/live.mp3
+```
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+### Broadcasting as a Live DJ
+You can interrupt the automated playlist and broadcast live.
+1. Download a broadcasting tool like [BUTT (Broadcast Using This Tool)](https://danielnoethen.de/butt/).
+2. Add a new server with the following details:
+   - **Address**: `localhost` (or your server's public IP)
+   - **Port**: `8005`
+   - **Password**: `dj-password` *(Configured in `liquidsoap/radio.liq`)*
+   - **Mountpoint**: `/live-dj`
+3. Click **Play** to connect.
+4. Liquidsoap will automatically crossfade from the current song to your microphone! When you disconnect, the auto-playlist resumes.
 
-## Stay in touch
+---
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+## ✦ PROJECT STRUCTURE ✦
 
-## License
-
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+- `/src/audio` - BullMQ worker that generates `radio.m3u` playlists.
+- `/src/db` - Drizzle ORM setup and PostgreSQL schema.
+- `/src/minio` - AWS SDK configuration for S3 uploads and public bucket policies.
+- `/src/upload` - API controllers for receiving `.mp3` files.
+- `/liquidsoap` - Contains `radio.liq`, the stream processing engine configuration.
+- `docker-compose.yml` - Defines the external infrastructure.
