@@ -2,19 +2,46 @@
 set("log.file", false)
 set("log.stdout", true)
 
+# Configure Harbor to listen on all interfaces
+set("harbor.bind_addr", "0.0.0.0")
+
+# --- Authentication Mechanism ---
+# This is a custom authentication function for the Live DJ.
+# Currently, it uses a hardcoded password.
+# To extend this to use your NestJS API later, you can replace this
+# with a function that makes an HTTP GET request (using http.get).
+def dj_auth(user, password) =
+  if password == "dj-password" then
+    true
+  else
+    false
+  end
+end
+
+# --- AutoDJ Playlist ---
 # Load the playlist from the shared volume
-# mode="normal" means it will play the tracks sequentially.
-# reload_mode="watch" makes liquidsoap reload the playlist when the file changes.
 radio = playlist(
   "/playlists/radio.m3u",
   mode="normal",
   reload_mode="watch"
 )
-
-# Crossfade between tracks
 radio = crossfade(radio)
 
-# Make the source safe (infallible) so icecast doesn't complain
+# --- Live DJ Input ---
+# Listen on port 8005 for incoming streams on the mountpoint /live-dj
+live_dj = input.harbor(
+  "live-dj",
+  port=8005,
+  auth=dj_auth
+)
+
+# --- Stream Routing ---
+# If the live_dj stream connects, switch to it immediately.
+# When live_dj disconnects, fallback to the AutoDJ radio.
+# track_sensitive=false means the switch happens instantly without waiting for the current track to finish.
+radio = fallback(track_sensitive=false, [live_dj, radio])
+
+# Make the final combined source safe (infallible) so icecast doesn't complain
 radio = mksafe(radio)
 
 # Output to icecast

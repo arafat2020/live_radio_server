@@ -45,6 +45,8 @@ services:
 
   liquidsoap:
     image: savonet/liquidsoap:v2.2.5
+    ports:
+      - "8005:8005"
     volumes:
       - ./liquidsoap:/scripts
       - ./storage/playlists:/playlists
